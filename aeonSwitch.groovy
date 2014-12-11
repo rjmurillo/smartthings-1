@@ -18,6 +18,8 @@
 	change log
     1.1 2014-12-08
     	-added light state restore to prevent alarm smartapps from turning off the light if it was on when the stobe request was made.
+    1.2 2014-12-10
+    	-added flash command with parameters for smartapp integration
     
 	AEON G2 
 	0x20 Basic
@@ -42,6 +44,7 @@ metadata {
         capability "Alarm" 
 		capability "Polling"
 		capability "Refresh"
+        command "flash", ["string"]  //blink,flasher,strobe
         //aeon S2 switch (DSC26103-ZWUS)
         fingerprint deviceId: "0x1001", inClusters: "0x25,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86,0xEF,0x82"
 	}
@@ -186,7 +189,8 @@ def refresh() {
 }
 
 //built in flasher mode
-def flash() {
+def flash(type) {
+	if (!type) type = settings.blinker
 	//AEON blink parameters
 	//1: blink duration in seconds 1-255
     //2: cycle time in .1 seconds (50% duty cycle) 1-255
@@ -196,13 +200,14 @@ def flash() {
     if (isOn) state.stateWhenFlashed = 1
     else state.stateWhenFlashed = 0
 	
-    switch (settings.blinker) {
+    //switch (settings.blinker) {
+    switch (type) {
 		case "Flasher":
         	pBlink.add(10)
             pBlink.add(10)
             break
 		case "Strobe":
-            pBlink.add(5)
+            pBlink.add(3)
             pBlink.add(2)
             break
 		default: //Blink
@@ -223,17 +228,17 @@ def flash() {
 
 def strobe() {
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 def siren() {
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 def both()	{
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 //capture preference changes
