@@ -9,7 +9,7 @@
  *	preferences tile for setting:
  * 		reporting functions (parameter 80)	[ 0:off, 1:hail, 2:report ] set to "Report" for fastest physical updates from the device
  *		control switch type (parameter 120)	[ 0:momentary, 1:toggle, 2:three way ] (2 isn't tested, not sure how its suppposed to work)
- *		preconfigured blinker modes			[ Blink, Flasher ]
+ *		preconfigured blinker modes			[ Blink, Flasher, Strobe ]
  *		
  * Mike Maxwell
  * madmax98087@yahoo.com
@@ -18,6 +18,8 @@
  	change log
     1.1 2014-12-08
     	-added light state restore to prevent alarm smartapps from turning off the light if it was on when the stobe request was made.
+    1.2 2014-12-10
+    	-added flash command with parameters for smartapp integration        
 
 	AEON G2 
 	0x20 Basic
@@ -47,6 +49,7 @@ metadata {
 		capability "Refresh"
         command "levelUp"
         command "levelDown"
+        command "flash", ["string"]  //blink,flasher,strobe
        //aeon S2 dimmer (DSCxxxx-ZWUS)
         fingerprint deviceId: "0x1104", inClusters: "0x26,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86,0xEF,0x82"
 	}		
@@ -54,7 +57,7 @@ metadata {
     	//section("opts") {
         	input name: "param80", type: "enum", title: "Set change notice:", description: "Type", required: true, options:["Off","Hail","Report"]
         	input name: "param120", type: "enum", title: "Set trigger mode:", description: "Switch type", required: true, options:["Momentary","Toggle","Three Way"]
-        	input name: "blinker", type: "enum", title: "Set blinker mode:", description: "Blinker type", required: false, options:["Blink","Flasher"]
+        	input name: "blinker", type: "enum", title: "Set blinker mode:", description: "Blinker type", required: false, options:["Blink","Flasher","Strobe"]
         	input name: "dInterval", type: "enum", title: "Set dimmer button offset:", description: "Value per click", required: false, options:["1","5","10"]
         //}
     }
@@ -88,16 +91,16 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		standardTile("blink", "device.alarm", inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"alarm.strobe", icon:"st.secondary.strobe"
+            state "default", label:"", action:"alarm.strobe", backgroundColor: "#53a7c0", icon:"st.secondary.strobe" 
 		}
 		valueTile("lValue", "device.level", inactiveLabel: true, height:1, width:1, decoration: "flat") {
             state "levelValue", label:'${currentValue}%', unit:"", backgroundColor: "#53a7c0"
         }
         standardTile("lUp", "device.switchLevel", inactiveLabel: false,decoration: "flat", canChangeIcon: false) {
-                        state "default", action:"levelUp", icon:"st.illuminance.illuminance.bright"
+            state "default", action:"levelUp", icon:"st.illuminance.illuminance.bright"
         }
         standardTile("lDown", "device.switchLevel", inactiveLabel: false,decoration: "flat", canChangeIcon: false) {
-                        state "default", action:"levelDown", icon:"st.illuminance.illuminance.light"
+            state "default", action:"levelDown", icon:"st.illuminance.illuminance.light"
         }
 
 		main(["switch"])
@@ -139,6 +142,7 @@ def levelDown(){
 }
 
 def parse(String description) {
+	//log.debug "parse():${description}"
 	def item1 = [
 		canBeCurrentState: false,
 		linkText: getLinkText(device),
@@ -189,6 +193,8 @@ def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevel
 }
 
 def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
+	//log.debug "doCreateEvent(cmd):${cmd.inspect()}"
+    //log.debug "doCreateEvent(item1):${item1.inspect()}"
 	def result = [item1]
 	item1.name = "switch"
 	item1.value = cmd.value ? "on" : "off"
@@ -263,7 +269,8 @@ def refresh() {
 }
 
 //built in flasher mode
-def flash() {
+def flash(type) {
+	if (!type) type = settings.blinker
 	//AEON blink parameters
 	//1: blink duration in seconds 1-255
     //2: cycle time in .1 seconds (50% duty cycle) 1-255
@@ -277,28 +284,33 @@ def flash() {
         	pBlink.add(10)
             pBlink.add(10)
             break
+        case "Strobe":
+            pBlink.add(3)
+            pBlink.add(2)
+            break
 		default: //Blink
            	pBlink.add(1)
            	pBlink.add(20)
             break
 	}
+    //sendEvent (name: "alarm", value: "done",descriptionText: "Flasher activated.")
 	zwave.configurationV1.configurationSet(configurationValue: pBlink, parameterNumber: 2, size: 2).format()
 }
 //alarm methods
 
 def strobe() {
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 def siren() {
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 def both()	{
 	state.alarmTriggered = 1
-	flash()
+	flash(settings.blinker)
 }
 
 //capture preference changes
