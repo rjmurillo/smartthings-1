@@ -1,4 +1,4 @@
-/* AEON specific micro driver 1.1
+/* AEON specific micro driver 1.2
  *
  * Variation of the stock SmartThings "Dimmer-Switch" and twack's improved dimmer
  *	--auto re-configure after setting preferences
