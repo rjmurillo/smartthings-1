@@ -1,4 +1,4 @@
-/* AEON specific micro driver 1.2
+/* AEON specific micro driver 1.3
  *
  * Variation of the stock SmartThings "Dimmer-Switch" and twack's improved dimmer
  *	--auto re-configure after setting preferences
@@ -20,6 +20,8 @@
     	-added light state restore to prevent alarm smartapps from turning off the light if it was on when the stobe request was made.
     1.2 2014-12-10
     	-added flash command with parameters for smartapp integration        
+    1.3 2014-12-14
+    	-almost a complete parser re-write
 
 	AEON G2 
 	0x20 Basic
@@ -39,48 +41,40 @@
 */
 
 metadata {
-	definition (name: "aeonDimmer", author: "Mike Maxwell") {
-    	capability "Switch Level"
+	definition (name: "aeonDimmer", namespace: "mmaxwell", author: "mike maxwell") {
 		capability "Actuator"
 		capability "Switch"
-        capability "Sensor"
-        capability "Alarm" 
-		capability "Polling"
 		capability "Refresh"
+		capability "Sensor"
+        capability "Alarm" 
+        capability "Switch Level"
         command "levelUp"
         command "levelDown"
         command "flash", ["string"]  //blink,flasher,strobe
-       //aeon S2 dimmer (DSCxxxx-ZWUS)
-        fingerprint deviceId: "0x1104", inClusters: "0x26,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86,0xEF,0x82"
-	}		
-  	preferences {
-    	//section("opts") {
-        	input name: "param80", type: "enum", title: "Set change notice:", description: "Type", required: true, options:["Off","Hail","Report"]
-        	input name: "param120", type: "enum", title: "Set trigger mode:", description: "Switch type", required: true, options:["Momentary","Toggle","Three Way"]
-        	input name: "blinker", type: "enum", title: "Set blinker mode:", description: "Blinker type", required: false, options:["Blink","Flasher","Strobe"]
-        	input name: "dInterval", type: "enum", title: "Set dimmer button offset:", description: "Value per click", required: false, options:["1","5","10"]
-        //}
-    }
+        //aeon S2 switch (DSC26103-ZWUS)
+        fingerprint deviceId: "0x1001", inClusters: "0x25,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86,0xEF,0x82"
 
+	}
+    preferences {
+       	input name: "param80", type: "enum", title: "State change notice:", description: "Type", required: true, options:["Off","Hail","Report"]
+        input name: "param120", type: "enum", title: "Set trigger mode:", description: "Switch type", required: true, options:["Momentary","Toggle","Three Way"]
+        input name: "blinker", type: "enum", title: "Set blinker mode:", description: "Blinker type", required: false, options:["Blink","Flasher","Strobe"]
+        input name: "dInterval", type: "enum", title: "Set dimmer button offset:", description: "Value per click", required: false, options:["1","5","10"]
+    }
+  
+
+	// simulator metadata
 	simulator {
 		status "on":  "command: 2003, payload: FF"
 		status "off": "command: 2003, payload: 00"
-		status "09%": "command: 2003, payload: 09"
-		status "10%": "command: 2003, payload: 0A"
-		status "33%": "command: 2003, payload: 21"
-		status "66%": "command: 2003, payload: 42"
-		status "99%": "command: 2003, payload: 63"
 
 		// reply messages
-		reply "2001FF,delay 5000,2602": "command: 2603, payload: FF"
-		reply "200100,delay 5000,2602": "command: 2603, payload: 00"
-		reply "200119,delay 5000,2602": "command: 2603, payload: 19"
-		reply "200132,delay 5000,2602": "command: 2603, payload: 32"
-		reply "20014B,delay 5000,2602": "command: 2603, payload: 4B"
-		reply "200163,delay 5000,2602": "command: 2603, payload: 63"
+		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
+		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
 
-	tiles {
+	// tile definitions
+tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true) {
 			state "on", label:'${name}', action:"switch.off", backgroundColor:"#79b821", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -106,6 +100,64 @@ metadata {
 		main(["switch"])
         details(["switch", "lUp", "lDown","blink","lValue","refresh"])
 	}
+ }
+
+def parse(String description) {
+	def result = null
+	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
+    //log.debug "cmd:${cmd.inspect()}"
+	def item1 = [
+		canBeCurrentState: false,
+		linkText: displyName,
+		isStateChange: false,
+		displayed: false,
+		descriptionText: description,
+		value:  description
+	]
+    if (cmd.hasProperty("value")) {
+		result = createEvent(cmd, item1)
+	}
+    //log.debug "res:${result.inspect()}"
+	return result
+}
+
+
+def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1) {
+	//aeons return this when in mode 2
+	//log.debug "basicReport:${cmd.inspect()}"
+    
+    def result = [item1]
+
+	item1.name = "switch"
+	item1.value = cmd.value ? "on" : "off"
+	item1.handlerName = item1.value
+	item1.descriptionText = "${item1.linkText} was turned ${item1.value}"
+	item1.canBeCurrentState = true
+	item1.isStateChange = isStateChange(device, item1.name, item1.value)
+	item1.displayed = item1.isStateChange
+
+	if (cmd.value > 15) {
+		def item2 = new LinkedHashMap(item1)
+		item2.name = "level"
+		item2.value = cmd.value as String
+		item2.unit = "%"
+		item2.descriptionText = "${item1.linkText} dimmed ${item2.value} %"
+		item2.canBeCurrentState = true
+		item2.isStateChange = isStateChange(device, item2.name, item2.value)
+		item2.displayed = false
+		result << item2
+	}
+    //i still don't know what this is...
+    for (int i = 0; i < result.size(); i++) {
+		result[i].type = "physical"
+	}
+    return result 
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in or don't know about
+    //log.debug "udf:${cmd.inspect()}"
+	return [:]
 }
 
 def levelUp(){
@@ -114,9 +166,10 @@ def levelUp(){
     def int nextLevel = crntLevel - (crntLevel % step) + step  
     state.alarmTriggered = 0
     if( nextLevel > 99)	nextLevel = 99
+    //log.debug "crnt:${crntLevel} next:${nextLevel}"
     //Don't request a config report when advanced reporting is enabled
     if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: nextLevel).format()
-    else delayBetween ([zwave.basicV1.basicSet(value: nextLevel).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+    else delayBetween ([zwave.basicV1.basicSet(value: nextLevel).format(), zwave.basicV1.basicGet().format()], 5000)
 }
 
 def levelDown(){
@@ -129,7 +182,7 @@ def levelDown(){
     } else {
     	nextLevel = crntLevel - (crntLevel % step) - step
     }
-
+	//log.debug "crnt:${crntLevel} next:${nextLevel}"
 	if (nextLevel == 0){
     	off()
     }
@@ -137,135 +190,45 @@ def levelDown(){
     {
     	//Don't request a config report when advanced reporting is enabled
     	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: nextLevel).format()
-    	else delayBetween ([zwave.basicV1.basicSet(value: nextLevel).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
-    }
-}
-
-def parse(String description) {
-	//log.debug "parse():${description}"
-	def item1 = [
-		canBeCurrentState: false,
-		linkText: getLinkText(device),
-		isStateChange: false,
-		displayed: false,
-		descriptionText: description,
-		value:  description
-	]
-	def result
-    def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x26: 1, 0x70: 1, 0x72: 1, 0x73: 1])
-	if (cmd) {
-		result = createEvent(cmd, item1)
-	}
-	else {
-		item1.displayed = displayed(description, item1.isStateChange)
-		result = [item1]
-	}
-    if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
-		result = [result, response(zwave.basicV1.basicGet())]
-		log.debug "Was hailed: requesting state update"
-	}
-	//log.debug "Parse returned ${result?.descriptionText}"
-	return result
-    
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
-	[name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false]
-    //log.debug "hail called"
-}
-
-def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1) {
-	def result = doCreateEvent(cmd, item1)
-	for (int i = 0; i < result.size(); i++) {
-		result[i].type = "physical"
-	}
-	result
-}
-
-def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd, Map item1) {
-	def result = doCreateEvent(cmd, item1)
-	result[0].descriptionText = "${item1.linkText} is ${item1.value}"
-	result[0].handlerName = cmd.value ? "statusOn" : "statusOff"
-	for (int i = 0; i < result.size(); i++) {
-		result[i].type = "digital"
-	}
-	result
-}
-
-def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
-	//log.debug "doCreateEvent(cmd):${cmd.inspect()}"
-    //log.debug "doCreateEvent(item1):${item1.inspect()}"
-	def result = [item1]
-	item1.name = "switch"
-	item1.value = cmd.value ? "on" : "off"
-	item1.handlerName = item1.value
-	item1.descriptionText = "${item1.linkText} was turned ${item1.value}"
-	item1.canBeCurrentState = true
-	item1.isStateChange = isStateChange(device, item1.name, item1.value)
-	item1.displayed = item1.isStateChange
-
-	if (cmd.value >= 5) {
-		def item2 = new LinkedHashMap(item1)
-		item2.name = "level"
-		item2.value = cmd.value as String
-		item2.unit = "%"
-		item2.descriptionText = "${item1.linkText} dimmed ${item2.value} %"
-		item2.canBeCurrentState = true
-		item2.isStateChange = isStateChange(device, item2.name, item2.value)
-		item2.displayed = false
-		result << item2
-	}
-	result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	log.debug("Parameter number ${cmd.parameterNumber}, Value: ${cmd.configurationValue}")
-}
-
-def createEvent(physicalgraph.zwave.Command cmd,  Map map) {
-	// Handles any Z-Wave commands we aren't interested in
-	//log.debug "$cmd"
-    [:]
-}
-
-def on() {
-	//reset alarm trigger
-    state.alarmTriggered = 0
-	//Don't request a config report when advanced reporting is enabled
-	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: 0xFF).format()
-    else delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
-}
-
-def off() {
-    //log.debug "at:${state.alarmTriggered} swf:${state.stateWhenFlashed}"
-    //override alarm off command from smartApps
-    if (state.alarmTriggered == 1 && state.stateWhenFlashed == 1) {
-    	state.alarmTriggered = 0
-    } else {
-    	//Don't request a config report when advanced reporting is enabled
-    	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: 0x00).format()
-		else delayBetween ([zwave.basicV1.basicSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+    	else delayBetween ([zwave.basicV1.basicSet(value: nextLevel).format(), zwave.basicV1.basicGet().format()], 5000)
     }
 }
 
 def setLevel(value) {
 	//Don't request a config report when advanced reporting is enabled
 	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: value).format()
-    else delayBetween ([zwave.basicV1.basicSet(value: value).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+    else delayBetween ([zwave.basicV1.basicSet(value: value).format(), zwave.basicV1.basicGet().format()], 5000)
 }
 def setLevel(value, duration) {
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	//Don't request a config report when advanced reporting is enabled
 	if (settings.param80 in ["Hail","Report"]) zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: 0).format()
-    else delayBetween ([zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: duration).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 0)
+    else delayBetween ([zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: duration).format(), zwave.basicV1.basicGet().format()], 0)
 }
 
-def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
+def on() {
+    //reset alarm trigger
+    state.alarmTriggered = 0
+	//Don't request a config report when advanced reporting is enabled
+	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: 0xFF).format()
+    else delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(), zwave.basicV1.basicGet().format()], 5000)
+}
+
+def off() {
+    //log.debug "at:${state.alarmTriggered} swf:${state.stateWhenFlashed}"
+    
+    //override alarm off command from smartApps
+    if (state.alarmTriggered == 1 && state.stateWhenFlashed == 1) {
+    	state.alarmTriggered = 0
+    } else {
+    	//Don't request a config report when advanced reporting is enabled
+    	if (settings.param80 in ["Hail","Report"]) zwave.basicV1.basicSet(value: 0x00).format()
+		else delayBetween ([zwave.basicV1.basicSet(value: 0x00).format(),  zwave.basicV1.basicGet().format()], 5000)
+    }
 }
 
 def refresh() {
-	poll()
+     return zwave.basicV1.basicGet().format()
 }
 
 //built in flasher mode
@@ -296,8 +259,8 @@ def flash(type) {
     //sendEvent (name: "alarm", value: "done",descriptionText: "Flasher activated.")
 	zwave.configurationV1.configurationSet(configurationValue: pBlink, parameterNumber: 2, size: 2).format()
 }
-//alarm methods
 
+//alarm methods
 def strobe() {
 	state.alarmTriggered = 1
 	flash(settings.blinker)
@@ -349,13 +312,23 @@ def updated() {
     if (p80 != state.param80)	{
     	//log.debug "update 80:${p80}"
         state.param80 = p80 
-        return response(zwave.configurationV1.configurationSet(configurationValue: [p80], parameterNumber: 80, size: 1).format())
+        return response(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [p80]).format())
     }
 	if (p120 != state.param120)	{
     	//log.debug "update 120:${p120}"
         state.param120 = p120
-        return response(zwave.configurationV1.configurationSet(configurationValue: [p120], parameterNumber: 120, size: 1).format())
+        return response(zwave.configurationV1.configurationSet(parameterNumber: 120, size: 1, configurationValue: [p120]).format())
     }
 
 	//log.debug "after settings: ${settings.inspect()}, state: ${state.inspect()}"
+}
+
+def configure() {
+	settings.param80 = "Report"
+    settings.param120 = "Toggle"
+    settings.blinker = "Blink"
+	delayBetween([
+		zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: 2).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 120, size: 1, configurationValue: 1).format()
+	])
 }
