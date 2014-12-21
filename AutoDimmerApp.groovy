@@ -1,7 +1,10 @@
 /**
- *  Auto Dimmer V1.0
+ *  Auto Dimmer V1.1
  *
  *  Author: Mike Maxwell
+ 	1.1 2014-12-21
+    	updated logging for more clarity
+ 
  */
 definition(
     name: "Auto Dimmer",
@@ -48,19 +51,22 @@ def dimHandler(evt) {
     
 	if (state.lastIlum != dLow && crntLux < lux.toInteger()) {
 		state.lastIlum = dLow
-        log.debug "set to:${dLow}"
+        log.debug "Transition, set to:${dLow}"
 	}
 	else if (state.lastIlum != dHigh && crntLux > (lux.toInteger() * 1.2)) {
 		state.lastIlum = dHigh
-        log.debug "set to:${dHigh}"
+        log.debug "Transition, set to:${dHigh}"
 	}
     
     def lastIlum = state.lastIlum.toInteger()
     if (lastIlum == 100) lastIlum = 99
  	def dimmer = dimmers.find{it.id == evt.deviceId}
 
-    log.debug "dimmer:${dimmer.displayName} val:${dimmer.currentValue("level")} lastIllum:${state.lastIlum} lux:${crntLux}"
-	if (dimmer.currentValue("level") != lastIlum) dimmer.setLevel(lastIlum)
-	//dimmer.setLevel(lastIlum)
+    log.debug "dimmer:${dimmer.displayName}, currentLevel:${dimmer.currentValue("level")}%, requestedValue:${lastIlum}%, currentLux:${crntLux}"
+	if (dimmer.currentValue("level") != lastIlum) {
+    	log.debug "dimmer:${dimmer.displayName} set to:${lastIlum}%"
+    	dimmer.setLevel(lastIlum)
+     }
+	
 }
 
