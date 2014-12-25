@@ -1,4 +1,4 @@
-/* AEON specific micro driver 1.3
+/* AEON specific micro driver 1.4
  *
  * Variation of the stock SmartThings "Dimmer-Switch" and twack's improved dimmer
  *	--auto re-configure after setting preferences
@@ -22,6 +22,8 @@
     	-added flash command with parameters for smartapp integration        
     1.3 2014-12-14
     	-almost a complete parser re-write
+    1.4 2014-12-25
+    	-fixed null display in activity feed
 
 	AEON G2 
 	0x20 Basic
@@ -103,40 +105,37 @@ tiles {
  }
 
 def parse(String description) {
+	//log.debug "res:${description.inspect()}"
 	def result = null
 	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
-    //log.debug "cmd:${cmd.inspect()}"
-	def item1 = [
-		canBeCurrentState: false,
-		linkText: displyName,
-		isStateChange: false,
-		displayed: false,
-		descriptionText: description,
-		value:  description
-	]
+    //log.debug "res:${item1.inspect()}"
     if (cmd.hasProperty("value")) {
-		result = createEvent(cmd, item1)
+		result = createEvent(cmd)
 	}
-    //log.debug "res:${result.inspect()}"
+    //log.debug "res:${item1.inspect()}"
 	return result
 }
 
 
-def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1) {
+def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	//aeons return this when in mode 2
-	//log.debug "basicReport:${cmd.inspect()}"
+    def dName = device.displayName
+    def dValue = cmd.value ? "on" : "off"
+    def dSC = isStateChange(device, "switch", dValue)
+    def item1 = [
+    		name			: "switch"
+            ,value			: dValue
+            ,linkText		: dName
+            ,descriptionText: "${dName} was turned ${dValue}"
+            ,isStateChange	: dSC
+            ,displayed		: dSC
+    ]
+    	
+	def result = [item1]
     
-    def result = [item1]
-
-	item1.name = "switch"
-	item1.value = cmd.value ? "on" : "off"
-	item1.handlerName = item1.value
-	item1.descriptionText = "${item1.linkText} was turned ${item1.value}"
-	item1.canBeCurrentState = true
-	item1.isStateChange = isStateChange(device, item1.name, item1.value)
-	item1.displayed = item1.isStateChange
-
-	if (cmd.value > 15) {
+    //log.debug "cr:${item1.inspect()}"
+	
+    if (cmd.value > 15) {
 		def item2 = new LinkedHashMap(item1)
 		item2.name = "level"
 		item2.value = cmd.value as String
@@ -151,7 +150,8 @@ def createEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, Map item1)
     for (int i = 0; i < result.size(); i++) {
 		result[i].type = "physical"
 	}
-    return result 
+    //log.debug "resultInspect:${result.inspect()}"
+    return  result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
