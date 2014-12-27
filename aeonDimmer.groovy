@@ -1,4 +1,4 @@
-/* AEON specific micro driver 1.4
+/* AEON specific micro driver 1.5
  *
  * Variation of the stock SmartThings "Dimmer-Switch" and twack's improved dimmer
  *	--auto re-configure after setting preferences
@@ -24,6 +24,8 @@
     	-almost a complete parser re-write
     1.4 2014-12-25
     	-fixed null display in activity feed
+    1.5 2014-12-26
+    	-yanked flakey turning states
 
 	AEON G2 
 	0x20 Basic
@@ -78,10 +80,8 @@ metadata {
 	// tile definitions
 tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true) {
-			state "on", label:'${name}', action:"switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', backgroundColor:"#79b821"
-			state "turningOff", label:'${name}', backgroundColor:"#ffffff"
+			state "on", label:'${name}', action:"switch.off", backgroundColor:"#79b821"
+			state "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
