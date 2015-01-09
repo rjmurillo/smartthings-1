@@ -1,11 +1,13 @@
 /**
- *  Auto Dimmer V1.2
+ *  Auto Dimmer V1.3
  *
  *  Author: Mike Maxwell
  	1.1 2014-12-21
     	--updated logging for more clarity
     1.2 2014-12-27
     	--complete rewrite
+    1.3 2015-01-08
+    	--corrected logic errors (3 lux settings map to 4 lux ranges and dimmer settings)
  
  */
 definition(
@@ -75,6 +77,14 @@ preferences {
                 type		: "enum",
                 options		: ["10","20","30","40","50","60"]
             )
+            input(
+                name		: "defDay", 
+                title		: "Default dimmer day level",
+                multiple	: false,
+                required	: true,
+                type		: "enum",
+                options		: ["40","50","60","70","80","90","100"]
+            )
 			input(
                 name		: "defBright", 
                 title		: "Default dimmer bright level",
@@ -118,6 +128,14 @@ def page2() {
                     options		: ["40","50","60","70","80"]
                 )
                 input(
+                    name		: "${safeName}_day", 
+                    title		: "Day level",
+                    multiple	: false,
+                    required	: false,
+                    type		: "enum",
+                    options		: ["40","50","60","70","80","90","100"]
+                )
+                input(
                     name		: "${safeName}_bright", 
                     title		: "Bright level",
                     multiple	: false,
@@ -154,20 +172,23 @@ def dimHandler(evt) {
     	//log.debug "mode:dark"
         prefVar = prefVar + "_dark"
         defVar = defDark
-    } else if (crntLux > luxBright.toInteger()) {
-    			//log.debug "mode:bright"
-                prefVar = prefVar + "_bright"
-                defVar = defBright
-    		}
-    else {
-    	//log.debug "mode:dusk"
-    	prefVar = prefVar + "_dusk"
-        defVar = defDusk
+    } else if (crntLux < luxDusk.toInteger()) {
+    			//log.debug "mode:dusk"
+                prefVar = prefVar + "_dusk"
+                defVar = defDusk
+  	} else if (crntLux < luxBright.toInteger()) {
+    			//log.debug "mode:day"
+                prefVar = prefVar + "_day"
+                defVar = defDay
+    } else {
+    	//log.debug "mode:bright"
+    	prefVar = prefVar + "_bright"
+        defVar = defBright
     }
    
     //def elvisOutput = sampleText ?: 'Viva Las Vegas!'
-    if (!this."${prefVar}") log.debug "Using defaults..."
-    else log.debug "Using overrides..."
+    if (!this."${prefVar}") log.debug "Auto Dimmer is using defaults..."
+    else log.debug "Auto Dimmer is using overrides..."
      
     def newDimmerLevel = (this."${prefVar}" ?: defVar).toInteger()
     
