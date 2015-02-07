@@ -6,8 +6,8 @@
  *
  * Includes:
  *	preferences tile for setting:
- * 		reporting functions (parameter 80)	[ 0:off, 1:hail, 2:report ] set to "Report" for fastest physical updates from the device
- *		control switch type (parameter 120)	[ 0:momentary, 1:toggle, 2:three way] (2 isn't tested, not sure how its suppposed to work)
+ * 		indicator led 
+ *		paddle reverse
  *		
  * Mike Maxwell
  * madmax98087@yahoo.com
