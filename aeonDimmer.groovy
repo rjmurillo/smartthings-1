@@ -57,7 +57,7 @@ metadata {
         command "levelUp"
         command "levelDown"
         command "flash", ["string"]  //blink,flasher,strobe
-        //aeon S2 dimmer (DSC26103-ZWUS)
+        //aeon S2 dimmer (DSC27103-ZWUS)
         fingerprint deviceId: "0x1104", inClusters: "0x26 0x27 0x2C 0x2B 0x70 0x85 0x72 0x86 0xEF 0x82"
 
 	}
