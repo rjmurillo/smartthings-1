@@ -1,4 +1,4 @@
-/* AEON specific micro driver 1.5
+/* AEON specific micro driver 1.6
  *
  * Variation of the stock SmartThings "Dimmer-Switch" and twack's improved dimmer
  *	--auto re-configure after setting preferences
@@ -26,6 +26,8 @@
     	-fixed null display in activity feed
     1.5 2014-12-26
     	-yanked flakey turning states
+    1.6 2015-02-19
+    	-corrected fingerprint (was using aeon switch finger print)
 
 	AEON G2 
 	0x20 Basic
@@ -55,8 +57,8 @@ metadata {
         command "levelUp"
         command "levelDown"
         command "flash", ["string"]  //blink,flasher,strobe
-        //aeon S2 switch (DSC26103-ZWUS)
-        fingerprint deviceId: "0x1001", inClusters: "0x25,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86,0xEF,0x82"
+        //aeon S2 dimmer (DSC26103-ZWUS)
+        fingerprint deviceId: "0x1104", inClusters: "0x26 0x27 0x2C 0x2B 0x70 0x85 0x72 0x86 0xEF 0x82"
 
 	}
     preferences {
