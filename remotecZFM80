@@ -1,4 +1,4 @@
-/* Remotec ZFM-80 specific device V1.0
+/* Remotec ZFM-80 specific device V1.1
  *
  * Variation of the stock SmartThings Relay Switch
  *	--auto re-configure after setting preferences
@@ -10,7 +10,7 @@
  * 2015-02-16
  *
 	change log
- 	
+ 		2015-02-16 added delay between configuration changes, helps with devices further away from the hub.
 */
 
 metadata {
@@ -195,13 +195,17 @@ def updated() {
 	if (p2 != state.param2)	{
         state.param2 = p2
         if (p2 == 0) {
-        	return response(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [0]).format())
-            return response(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [0]).format())
-            return response(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format())
+       		return response (delayBetween([
+				zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [0]).format(),
+        		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [0]).format(),
+        		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
+			]))
         } else {
-        	return response(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [p2]).format())
-            return response(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [232]).format())
-            return response(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format())
+        	return response (delayBetween([
+				zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [p2]).format(),
+        		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [232]).format(),
+        		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
+			]))
         }
     }
 	
