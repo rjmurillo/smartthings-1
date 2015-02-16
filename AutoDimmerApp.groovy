@@ -14,6 +14,7 @@
         --pretty typing cleanup
 	1.5 2015-02-11
 		--variable re-name fix
+		--mapped 100 to 99% dimmer level
  
  */
 definition(
@@ -203,6 +204,7 @@ def dimHandler(evt) {
     else log.debug "Auto Dimmer is using overrides..."
      
     def newDimmerLevel = (this."${prefVar}" ?: dimVar).toInteger()
+	if (newDimmerLevel == 100) newDimmerLevel = 99
     
     log.debug "dimmer:${dimmer.displayName}, currentLevel:${crntDimmerLevel}%, requestedValue:${newDimmerLevel}%, currentLux:${crntLux}"
   
