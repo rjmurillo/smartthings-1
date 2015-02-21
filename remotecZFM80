@@ -1,4 +1,4 @@
-/* Remotec ZFM-80 specific device V1.1
+/* Remotec ZFM-80 specific device V1.2
  *
  * Variation of the stock SmartThings Relay Switch
  *	--auto re-configure after setting preferences
@@ -11,6 +11,7 @@
  *
 	change log
  		2015-02-16 added delay between configuration changes, helps with devices further away from the hub.
+        2015-02-21 fixed null error on initial install
 */
 
 metadata {
@@ -183,9 +184,8 @@ def updated() {
     if ("${settings.param2}" == "Never") {
     	p2 = 0
     } else {
-    	p2 = ("${settings.param2}" ?: 0).toInteger()
+    	p2 = (settings.param2 ?: 0).toInteger()
     }
-	//log.debug "p2:${p2} param2:${setttings.param2}"
     
     if (p1 != state.param1)	{
         state.param1 = p1 
