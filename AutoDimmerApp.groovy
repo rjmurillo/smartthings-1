@@ -1,5 +1,5 @@
 /**
- *  Auto Dimmer V1.5
+ *  Auto Dimmer V1.6
  *
  *  Author: Mike Maxwell
  	1.1 2014-12-21
@@ -15,6 +15,8 @@
 	1.5 2015-02-11
 		--variable re-name fix
 		--mapped 100 to 99% dimmer level
+    1.6 2015-03-01
+    	--fixed dimmer overrides that wouldn't stick sometimes
  
  */
 definition(
@@ -119,7 +121,7 @@ def page2() {
         	def safeName = dimmer.displayName.replaceAll(/\W/,"")
             section ([hideable: true, hidden: true], "${dimmer.displayName} overrides...") {
                 input(
-                    name					: "${safeName}_dark"
+                    name					: safeName + "_dark"
                     ,title					: "Dark level"
                     ,multiple				: false
                     ,required				: false
@@ -128,7 +130,7 @@ def page2() {
                     ,refreshAfterSelection	:true
                 )
                 input(
-                    name					: "${safeName}_dusk" 
+                    name					: safeName + "_dusk" 
                     ,title					: "Dusk/Dawn level"
                     ,multiple				: false
                     ,required				: false
@@ -137,7 +139,7 @@ def page2() {
                     ,refreshAfterSelection	:true
                 )
                 input(
-                    name					: "${safeName}_day" 
+                    name					: safeName + "_day" 
                     ,title					: "Day level"
                     ,multiple				: false
                     ,required				: false
@@ -146,7 +148,7 @@ def page2() {
                     ,refreshAfterSelection	:true
                 )
                 input(
-                    name					: "${safeName}_bright" 
+                    name					: safeName + "_bright" 
                     ,title					: "Bright level"
                     ,multiple				: false
                     ,required				: false
