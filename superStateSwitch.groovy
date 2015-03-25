@@ -5,9 +5,9 @@ metadata {
         command "overrideScene"
         command "warn"
     }
-	preferences {
-        input name: "stateRestore", type: "bool", title: "Restore device states when scene is turned off?"
-    }    
+	//preferences {
+    //    input name: "stateRestore", type: "bool", title: "Restore device states when scene is turned off?"
+    //}    
 	simulator {
 	}
 	tiles {
@@ -35,25 +35,25 @@ def snap(){
 }
 def on(action) {
     if (!action) {
-    	log.debug "superState ${device.displayName}:on"
+    	//log.debug "superState ${device.displayName}:on"
     	return sendEvent(name: "switch", value: "on", data: "~on~")
     } else {
-    	log.debug "superState ${device.displayName}:on-${action}"
-    	return sendEvent(name: "switch", isStateChange: true, value: "on", data: "~${action}~")  //snaps when scene is on don't work
+    	//log.debug "superState ${device.displayName}:on-${action}"
+    	return sendEvent(name: "switch", isStateChange: true, value: "on", data: "~${action}~") 
         //return sendEvent(name: "switch", value: "on", data: "~${action}~")
     }
 }
 def off(action) {
 	if (!action) {
 		if ((settings.stateRestore ?: "false") == "true") {
-    		log.debug "superState ${device.displayName}:off-restore"
+    		//log.debug "superState ${device.displayName}:off-restore"
     	    return sendEvent(name: "switch", value: "off", data: "~restore~")   
     	} else {
-    		log.debug "superState ${device.displayName}:off"
+    		//log.debug "superState ${device.displayName}:off"
 			return sendEvent(name: "switch", value: "off", data: "~off~")
     	}
     } else {
-    	log.debug "superState ${device.displayName}:off-${action}"
+    	//log.debug "superState ${device.displayName}:off-${action}"
     	return sendEvent(name: "switch", value: "off", data: "~${action}~")
         
     }

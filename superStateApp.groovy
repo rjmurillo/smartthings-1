@@ -6,7 +6,6 @@
  *  Device (switch/dimmer/color) state capture and replay utility.
  *	- resulting scene is assigned to a child device
  *  - scene devices are editable post capture (recapture/add/delete)
- *	- option to restore each devices previous state individually (as captured when scene is turned on) when the scene is turned off 
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -34,7 +33,7 @@ preferences {
     page(name: "main")
     page(name: "group",nextPage	: "main")
     page(name: "scene",nextPage	: "main")
-    page(name: "delete",nextPage: "main")
+    //page(name: "delete",nextPage: "main")
 }
 
 def main(){
@@ -367,10 +366,11 @@ def setScene(sceneID,turnOn,restore){
         	groupDevices.each{ stDevice ->
         		deviceMap = state.deviceMaps[stDevice.id]
                 if (deviceMap != null){
-            		sceneMap = deviceMap.scenes[sceneID] //pretty sure this is the one to explode on no scene
+            		sceneMap = deviceMap.scenes[sceneID] 
             		if (sceneMap != null){
 						if (restore){
             				savedMap = deviceMap.old
+                            //
     						def crntEqualsSaved = true
     						def crntEqualsScene = true
                 			//log.debug "${stDevice.displayName}: saved:${savedMap} scene:${sceneMap}"
@@ -424,9 +424,11 @@ def setScene(sceneID,turnOn,restore){
                				}
             			} else {
 							if (restore){
-                					// scene off request with restore
-                    				if (logInfo) log.info "scene off request with restore for ${sceneID} ${stDevice.displayName}"
-                    				//need restore code
+                				// scene off request with restore
+                    			if (logInfo) log.info "scene off request with restore for ${sceneID} ${stDevice.displayName}"
+                    				//replace with restore code
+                                    stDevice.off()
+                                    
                 
                 				} else {
                 					//scene off request
@@ -452,80 +454,7 @@ def setScene(sceneID,turnOn,restore){
         state.mapsCheck = "No devices are selected for device group '${getGroupDisplayNameFromScene(sceneID)}', select your devices and snap a scene."                    
         success = false
     }
- 
 	return success
-    
-    
-    /*
-						if (restore){
-            				savedMap = deviceMap.old
-    						def crntEqualsSaved = true
-    						def crntEqualsScene = true
-                			//log.debug "${stDevice.displayName}: saved:${savedMap} scene:${sceneMap}"
-                			sceneMap.each{ attribute ->
-                				def crntValue = stDevice.currentValue(attribute.key).toString()
-                    			//log.debug "current- attr:${attribute.key} value:${crntValue}"
-                    			//log.debug "attr:${attribute.key} crnt:${crntValue} save:${savedMap[attribute.key].value} scene:${attribute.value}"
-                    
-                				if (attribute.value.toString() != crntValue){
-                    				//log.debug "NEQ scene attr:[${attribute.value}][${crntValue}]"
-                    				if (crntEqualsScene){
-                        				//log.debug "set false"
-                        				crntEqualsScene = false
-                        			}
-                    			}
-                    			//def savedAttribute = savedMap[attribute.key]
-                    			if ("${savedMap[attribute.key].value}" != crntValue){
-                    				//log.debug "NEQ save attr:[${savedMap[attribute.key].value}][${crntValue}]"
-                    				if (crntEqualsSaved){
-                        				//log.debug "set false"
-                        				crntEqualsSaved = false
-                        			}
-                    			}
-                			}
-                			log.debug "${stDevice.displayName}: crntEqualsSaved:${crntEqualsSaved} crntEqualsScene:${crntEqualsScene}" 
-						}    
-            			if (turnOn){
-							// scene on request            
-            				if (logInfo) log.info "scene on request for ${sceneID} ${stDevice.displayName}"
-							//this device goes on
-                			if (sceneMap.switch == "on"){	
-                    			//color
-								if (sceneMap.color) {
-                        			stDevice.on()
-                        			def colorMap = [hue:sceneMap.hue.toInteger(),saturation:sceneMap.saturation.toInteger(),level:sceneMap.level]
-                    				stDevice.setColor(colorMap)  
-                            		log.debug "color:${stDevice.displayName}, ON"
-                    			//dimmer
-                    			} else if (sceneMap.level){
-                      				stDevice.setLevel(sceneMap.level)	
-                        			log.debug "dimmer:${stDevice.displayName}, ON"
-                    			//switch    
-                    			} else {
-                    				stDevice.on()
-                        			log.debug "switch:${stDevice.displayName}, ON"
-                    			}
-               				//this device goes off
-               				} else {
-               					stDevice.off()
-                    			log.debug "${stDevice.displayName}, OFF"
-               				}
-                
-            			} else {
-							if (restore){
-                					// scene off request with restore
-                    				if (logInfo) log.info "scene off request with restore for ${sceneID} ${stDevice.displayName}"
-                    
-                
-                				} else {
-                					//scene off request
-                    				if (logInfo) log.info "scene off request for ${sceneID} ${stDevice.displayName}"
-                    				stDevice.off()
-                				}
-
-            				}
-*/
-    
 }
 
 def sceneSnap(sceneID,isNew) {
