@@ -1,5 +1,5 @@
 /**
- *  superState	1.0
+ *  superState	1.1
  *
  *  Copyright 2015 Mike Maxwell
  *  
@@ -31,7 +31,7 @@ definition(
 
 preferences {
     page(name: "main")
-    page(name: "group",nextPage	: "main")
+    page(name: "group")
     page(name: "scene",nextPage	: "main")
     //page(name: "delete",nextPage: "main")
 }
@@ -39,6 +39,7 @@ preferences {
 def main(){
 	def nextGroupIDX = getNextGroupIDX()
     def nextGroupID = "g${nextGroupIDX}"
+    //log.debug "mainPage- nextGroupIDX:${nextGroupIDX} nextGroupID:${nextGroupID}" 
     dynamicPage(name: "main", title: "superState", uninstall: true,install: true) {
         section("Device groups"){
    	        def prefGroups = getGroupMaps()
@@ -69,7 +70,19 @@ def main(){
 }
 
 def group(params){
-	def groupID = params.groupID
+	//log.debug "groupPage- params:${params} state:${state.groupID}"
+     	
+    //account for different paths between android and ios
+    def groupID //= params.groupID ?: params.params.groupID
+    
+    if (params.groupID) {
+    	groupID = params.groupID
+    } else if (params.params) {
+    	groupID = params.params.groupID
+    } else {
+    	groupID = state.groupID
+    }
+    
     def switchID = groupID + "dswitches" 
     def lockID = groupID + "dlocks"
     def relayID = groupID + "drelays"
@@ -78,8 +91,11 @@ def group(params){
 
 	def nextSceneIDX = getNextSceneIDX(groupID)
     def nextSceneID = "${groupID}s${nextSceneIDX}"
+	
+    //log.debug "groupPage- groupID:${groupID} sceneID:${nextSceneID}"
 
    	dynamicPage(name: "group", title: getGroupPageTitle(groupID), uninstall: false,install: false) {
+    //dynamicPage(name: "group", title: "title", uninstall: false,install: false) {
         section() {
             input(
             	name			: groupID
@@ -96,7 +112,7 @@ def group(params){
                 	name		: prefScene.key
                 	,title		: prefScene.value
                 	,required	: false
-                    ,params		: [sceneID:prefScene.key]
+                    ,params		: [sceneID:prefScene.key,groupID:groupID]
                     ,page		: "scene"
                     ,state		: "complete"
                     ,description: null
@@ -113,7 +129,7 @@ def group(params){
         	        name		: nextSceneID
         	        ,title		: "Add a Scene..." 
         	        ,required	: false
-        	        ,params		: [sceneID:nextSceneID]
+        	        ,params		: [sceneID:nextSceneID,groupID:groupID]
         	        ,page		: "scene"
         	        ,description: null
             	)  
@@ -161,16 +177,26 @@ def group(params){
 	}
 }
 def scene(params){
-	def sceneID = params.sceneID
-	dynamicPage(name: "scene", title: getSceneTitle(sceneID), install: false) {
-        section() {
-     		input(
-        	    name		: sceneID
-                ,type		: "text"
-        	    ,title		: "Name for this Scene..."
-        	    ,required	: true
-        	)
-        }
+	try {
+		//log.debug "scenePage- params:${params}" // state:${state.groupID}"
+		//account for different paths between android and ios
+		def sceneID = params.sceneID ?: params.params.sceneID
+    	def groupID = params.groupID ?: params.params.groupID
+    	state.groupID = groupID
+    	log.debug "scenePage- params:${params} state:${state.groupID}"
+		dynamicPage(name: "scene", title: getSceneTitle(sceneID), install: false) {
+        	section() {
+     			input(
+        	    	name		: sceneID
+                	,type		: "text"
+        	    	,title		: "Name for this Scene..."
+        	    	,required	: true
+        		)
+        	}
+    	}
+    }
+    catch (all) {
+    	//log.debug "boom..."
     }
 }
 
@@ -188,7 +214,7 @@ def updated() {
     subscribe(sceneSwitches,"switch",cmdHandler)
     //remove stale device maps...
 	cleanDeviceMaps()    
-    log.debug "deviceMaps:${state.deviceMaps}"
+    //log.debug "deviceMaps:${state.deviceMaps}"
     //log.debug "settings:${settings}"
     //log.debug "vtMaps:${state.vtMaps}"
     
@@ -350,7 +376,7 @@ def setScene(sceneID,turnOn,restore){
     //if turnOn == false and restore == false, then just turn everything off...
     //if turnOn == true, we turn on the scene, restore doesn't matter
     
-    log.debug "setScene sceneID:${sceneID} turnOn:${turnOn} restore:${restore}"
+    //log.debug "setScene sceneID:${sceneID} turnOn:${turnOn} restore:${restore}"
     def sceneMap = [:]
     def savedMap
     def deviceMap = [:]
@@ -395,15 +421,23 @@ def setScene(sceneID,turnOn,restore){
                         			}
                     			}
                 			}
-                			log.debug "${stDevice.displayName}: crntEqualsSaved:${crntEqualsSaved} crntEqualsScene:${crntEqualsScene}" 
+                			//log.debug "${stDevice.displayName}: crntEqualsSaved:${crntEqualsSaved} crntEqualsScene:${crntEqualsScene}" 
 						}    
             			if (turnOn){
 							// scene on request            
             				if (logInfo) log.info "scene on request for ${sceneID} ${stDevice.displayName}"
 							//this device goes on
-                			if (sceneMap.switch == "on"){	
+                			if (sceneMap.switch == "on"){
+                            	//RGBW
+                                if (sceneMap.whiteLevel) {
+                                	//log.debug "RGBW detected, map:${sceneMap}"
+                                    stDevice.on()
+                                    def colorMap = [hex:sceneMap.color,level:sceneMap.level]
+                    				stDevice.setColor(colorMap)
+                                    stDevice.setWhiteLevel(sceneMap.whiteLevel)
+                                    log.debug "RGBW:${stDevice.displayName}, ON"
                     			//color
-								if (sceneMap.color) {
+								} else if (sceneMap.color) {
                         			stDevice.on()
                         			def colorMap = [hue:sceneMap.hue.toInteger(),saturation:sceneMap.saturation.toInteger(),level:sceneMap.level]
                     				stDevice.setColor(colorMap)  
@@ -458,7 +492,7 @@ def setScene(sceneID,turnOn,restore){
 }
 
 def sceneSnap(sceneID,isNew) {
-	def attributesToSave = ['hue', 'saturation', 'color', 'switch', 'level']
+	def attributesToSave = ['hue', 'saturation', 'color', 'switch', 'level', "whiteLevel"]
     //def attributesToSave = ['color', 'switch', 'level']
 	def allAttributes = []
     def savedMap
@@ -602,6 +636,7 @@ def getNextGroupIDX(){
 	    if (crnt > next ) next = crnt
 	}
 	next ++
+    //log.debug "getNext:${next}"
 	return next
 }
 
