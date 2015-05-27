@@ -1,5 +1,5 @@
 /**
- *  Auto Dimmer V1.6
+ *  Auto Dimmer V1.7
  *
  *  Author: Mike Maxwell
  	1.1 2014-12-21
