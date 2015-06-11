@@ -35,14 +35,14 @@ preferences {
         section ("Control related...") {
         	input(
           		name		: "contacts"
-            	,title		: "Select contact sensors for fan control..."
+            	,title		: "Select contact sensor(s) for fan control..."
             	,multiple	: true
             	,required	: true
             	,type		: "capability.contactSensor"
         	)
             input(
             	name		: "thermostat"
-                ,title		: "select house thermostat"
+                ,title		: "Select house thermostat"
                 ,multiple	: false
                 ,required	: true
                 ,type		: "capability.thermostat"
@@ -56,7 +56,7 @@ preferences {
         	)
             input(
           		name		: "internalTemp"
-            	,title		: "Select internal temperature sensor"
+            	,title		: "Select internal temperature sensor(s)"
             	,multiple	: true
             	,required	: true
             	,type		: "capability.temperatureMeasurement"
@@ -108,13 +108,15 @@ def init() {
     subscribe(loadSensor,"threeAxis",loadHandler)
     subscribe(contacts,"contact",contactHandler)
     subscribe(internalTemp,"temperature",internalTempHandler)
-    subscribe (fan,"switch",fanHandler)
+    subscribe(fan,"switch",fanHandler)
     //subscribe (thermostat,"",statHandler)
-    subscribe(app, appTouch)
+    subscribe(app, main)
     state.tempEnable = false
     state.contactEnable = false
+    state.statEnable = false
+    state.manOn = false
 }
-def appTouch(evt) {
+def main(evt) {
 	//def tempEnable = false
     //def contactEnable = false
 	def stats = [:]
@@ -164,7 +166,7 @@ def appTouch(evt) {
     } else {
     	state.contactEnable = false
     }
-    log.info "contacts: ${contacts.currentValue("contact")}"
+    //log.info "contacts: ${contacts.currentValue("contact")}"
 	stat = ["contactEnable":"${state.contactEnable}"]    
     stats << stat
     
@@ -174,6 +176,14 @@ def appTouch(evt) {
 	thermostatFanMode 			String "auto" "on" "circulate" 
 	thermostatOperatingState 	String "heating" "idle" "pending cool" "vent economizer" "cooling" "pending heat" "fan only" 
     */
+    if (thermostat.currentValue("thermostatMode") != "heat") {
+    	state.statEnable = true
+    } else {
+    	state.statEnable = false
+    }
+	stat = ["statEnable":"${state.statEnable}"]    
+    stats << stat
+    
     stat = ["statMode":"${thermostat.currentValue("thermostatMode")}"]
     stats << stat
 	stat = ["fanMode":"${thermostat.currentValue("thermostatFanMode")}"]
@@ -183,23 +193,28 @@ def appTouch(evt) {
 
     
     //fan control
-    if (state.contactEnable && state.tempEnable) {
-    	stat = ["fanAction":"fanOn"]
+    def fanIsOn = fan.currentValue("switch") == "on"
+    if (state.contactEnable && state.tempEnable && !fanIsOn && state.statEnable) {
+    	stat = ["fanAction":"turn fan On"]
     	fan.on()
-    } else {
-    	stat = ["fanAction":"fanOff"]
+    } else if ((!state.contactEnable || !state.tempEnable || !state.statEnable) && fanIsOn ){
+    	stat = ["fanAction":"turn fan Off"]
     	fan.off()
+    } else {
+    	stat = ["fanAction":"fan is:${fan.currentValue("switch")}"]
     }
     stats << stat
-    
-    
-    
     
     log.info "set:${set}"
 	log.info "stats:${stats}"
 }
 def fanHandler(evt){
 	log.info "fantHandler- name:${evt.displayName} value:${evt.value}"
+    if (evt.value == "on") {
+    	state.manOn = false
+    } else {
+    	state.manOn = false
+    }
 }
 
 def loadHandler(evt){
@@ -220,60 +235,12 @@ def loadHandler(evt){
 }
 
 def contactHandler(evt){
-	log.info "contactHandler- name:${evt.displayName} value:${evt.value}"
-    appTouch()
+	//log.info "contactHandler- name:${evt.displayName} value:${evt.value}"
+    main(evt)
 }
 
 def internalTempHandler(evt){
-	log.info "internalTempHandler- name:${evt.displayName} value:${evt.value}"
-    appTouch()
-    
-    
+	//log.info "internalTempHandler- name:${evt.displayName} value:${evt.value}"
+    main(evt)
 }
 
-
-/*
-def dimHandler(evt) {
-	def newLevel = 0
-    
-	//get the dimmer that's been turned on
-	def dimmer = dimmers.find{it.id == evt.deviceId}
-    
-    //get its current dim level
-    def crntDimmerLevel = dimmer.currentValue("level").toInteger()
-    
-    //get currentLux reading
-    def crntLux = luxOmatic.currentValue("illuminance").toInteger()
-    def prefVar = dimmer.displayName.replaceAll(/\W/,"")
-    def dimVar
-    if (crntLux < luxDark.toInteger()) {
-    	//log.debug "mode:dark"
-        prefVar = prefVar + "_dark"
-        dimVar = dimDark
-    } else if (crntLux < luxDusk.toInteger()) {
-    			//log.debug "mode:dusk"
-                prefVar = prefVar + "_dusk"
-                dimVar = dimDusk
-  	} else if (crntLux < luxBright.toInteger()) {
-    			//log.debug "mode:day"
-                prefVar = prefVar + "_day"
-                dimVar = dimDay
-    } else {
-    	//log.debug "mode:bright"
-    	prefVar = prefVar + "_bright"
-        dimVar = dimBright
-    }
-   
-    if (!this."${prefVar}") log.debug "Auto Dimmer is using defaults..."
-    else log.debug "Auto Dimmer is using overrides..."
-     
-    def newDimmerLevel = (this."${prefVar}" ?: dimVar).toInteger()
-	if (newDimmerLevel == 100) newDimmerLevel = 99
-    
-    log.debug "dimmer:${dimmer.displayName}, currentLevel:${crntDimmerLevel}%, requestedValue:${newDimmerLevel}%, currentLux:${crntLux}"
-  
-    if ( newDimmerLevel != crntDimmerLevel ) dimmer.setLevel(newDimmerLevel)
-    
-   
-}
-*/
