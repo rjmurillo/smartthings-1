@@ -1,4 +1,4 @@
-/* Remotec ZFM-80 specific device V1.2
+/* Remotec ZFM-80 specific device V1.3
  *
  * Variation of the stock SmartThings Relay Switch
  *	--auto re-configure after setting preferences
@@ -12,6 +12,7 @@
 	change log
  		2015-02-16 added delay between configuration changes, helps with devices further away from the hub.
         2015-02-21 fixed null error on initial install
+        2015-06-22 added momentary on function for garage door controller
 */
 
 metadata {
@@ -29,6 +30,7 @@ metadata {
     preferences {
         input name: "param1", type: "enum", title: "Set external switch mode:", description: "Switch type", required: true, options:["Disabled","Momentary NO","Momentary NC","Toggle NO","Toggle NC"]
        	input name: "param2", type: "enum", title: "Auto shutoff minutes:", description: "Minutes?", required: false, options:["Never","1","5","30","60","90","120","240"]
+        input name: "isGD", type: "bool",title: "Enable Momentary on (for garage door controller)", required: false
     }
 
 	// simulator metadata
@@ -83,12 +85,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
 }
 
-//def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-//	def value = "when off"
-//	if (cmd.configurationValue[0] == 1) {value = "when on"}
-//	if (cmd.configurationValue[0] == 2) {value = "never"}
-//	[name: "indicatorStatus", value: value, display: false]
-//}
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	[name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false]
@@ -100,8 +96,6 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	}
 
 	final relays = [
-	    //[manufacturerId:0x0113, productTypeId: 0x5246, productId: 0x3133, productName: "Evolve LFM-20"],
-        //[manufacturerId:0x0113, productTypeId: 0x5246, productId: 0x3133, productName: "Linear FS20Z-1"],
 		[manufacturerId:0x5254, productTypeId: 0x8000, productId: 0x0002, productName: "Remotec ZFM-80"]
 	]
 
@@ -130,17 +124,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	if (settings.isGD) {
+    	//log.info "isGD: true"
+    	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),zwave.basicV1.basicSet(value: 0x00).format(),zwave.switchBinaryV1.switchBinaryGet().format()],3000)	
+    } else {
+    	//log.info "isGD: false"
+		delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),zwave.switchBinaryV1.switchBinaryGet().format()])
+    }
 }
 
 def off() {
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	delayBetween([zwave.basicV1.basicSet(value: 0x00).format(),	zwave.switchBinaryV1.switchBinaryGet().format()])
 }
 
 def poll() {
