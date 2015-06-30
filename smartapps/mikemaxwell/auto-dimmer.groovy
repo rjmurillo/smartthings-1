@@ -22,12 +22,12 @@
  
  */
 definition(
-    name		: "Auto Dimmer",
+    name	: "Auto Dimmer",
     namespace	: "MikeMaxwell",
-    author		: "Mike Maxwell",
+    author	: "Mike Maxwell",
     description	: "Automatically adjusts dimmer levels when dimmer(s) are turned on, levels are set based on lux sensor readings.",
     category	: "Convenience",
-    iconUrl		: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance.png",
+    iconUrl	: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance.png",
     iconX2Url	: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance@2x.png"
 )
 
