@@ -71,7 +71,7 @@ preferences {
                 ,multiple	: false
                 ,required	: true
                 ,type		: "enum"
-                ,options	: ["70","71","72","73","74","75","76","78","79"]
+                ,options	: ["65","66","67","68","69","70","71","72"]
             )
         	input(
                 name		: "fanHighTemp" 
@@ -79,7 +79,7 @@ preferences {
                 ,multiple	: false
                 ,required	: true
                 ,type		: "enum"
-                ,options	: ["80","81","82","83","84","85","86","87"]
+                ,options	: ["73","74","75","76","77","78","79","80"]
             )
             input(
                 name		: "fanEnableOffset" 
@@ -87,7 +87,7 @@ preferences {
                 ,multiple	: false
                 ,required	: true
                 ,type		: "enum"
-                ,options	: ["3","4","5","6","7","8","9","10"]
+                ,options	: ["0","1","2","3","4","5","6","7","8","9","10"]
             )
             
         }

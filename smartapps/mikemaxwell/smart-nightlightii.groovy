@@ -20,8 +20,8 @@ preferences {
 	section("Control these lights..."){
 		input "lights", "capability.switch", multiple: true
 	}
-	section("Turning on when it's dark and there's movement..."){
-		input "motionSensor", "capability.motionSensor", title: "Where?"
+	section("Turn on when it's dark and there's movement..."){
+		input "motionSensor", "capability.motionSensor", title: "Where?", multiple: true
 	}
 	section("And then off when it's light or there's been no movement for..."){
 		input "delayMinutes", "number", title: "Minutes?"
