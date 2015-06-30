@@ -24,7 +24,7 @@
  */
 definition(
     name		: "autoDimmer",
-    namespace	: "MikeMaxwell",
+    namespace	: "mikemaxwell",
     author		: "Mike Maxwell",
     description	: 
 
