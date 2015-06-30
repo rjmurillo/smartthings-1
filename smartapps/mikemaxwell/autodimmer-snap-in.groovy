@@ -37,7 +37,11 @@ definition(
 
 preferences {
     page(name: "page1", title: "autoDimmer Configuration", nextPage: "page2", uninstall: true) {
-        section {
+		section("About: 'autoDimmer snap-in'"){
+        	paragraph 	"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux sensor readings and the dimmer levels that you specify." + 
+						"This smartApp does not turn on dimmers directly, this allows you to retain all your existing on/off smartApps. This smartApp provides intelligent level management to your existing setup."
+        }
+		section ("Setup:"){
             input(
             	name		: "luxOmatic"
                 ,title		: "Use this lux Sensor..."
