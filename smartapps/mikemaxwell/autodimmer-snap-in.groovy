@@ -23,7 +23,7 @@
     	--updated description and renamed app
  */
 definition(
-    name		: "autoDimmer snap-in",
+    name		: "autoDimmer",
     namespace	: "MikeMaxwell",
     author		: "Mike Maxwell",
     description	: 
