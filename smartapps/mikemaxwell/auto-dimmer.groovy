@@ -1,5 +1,5 @@
 /**
- *  Auto Dimmer V1.7
+ *  Auto Dimmer V1.8
  *
  *  Author: Mike Maxwell
  	1.1 2014-12-21
@@ -19,7 +19,7 @@
     	--fixed dimmer overrides that wouldn't stick sometimes
     1.7 2015-05-27
     	--Had to change mode input and methods, broke for some reason
- 
+ 1.8
  */
 definition(
     name	: "Auto Dimmer",
