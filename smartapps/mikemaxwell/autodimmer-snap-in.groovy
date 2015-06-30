@@ -26,7 +26,10 @@ definition(
     name		: "autoDimmer snap-in",
     namespace	: "MikeMaxwell",
     author		: "Mike Maxwell",
-    description	: "This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux sensor readings and the dimmer levels that you specify.",
+    description	: 
+
+"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux sensor readings and the dimmer levels that you specify." + 
+"This smartApp does not turn on dimmers directly, this allows you to retain all your existing on/off smartApps. This smartApp provides intelligent level management to your existing setup.",
     category	: "Convenience",
     iconUrl		: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance.png",
     iconX2Url	: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance@2x.png"
