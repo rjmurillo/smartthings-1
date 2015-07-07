@@ -126,7 +126,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
 	if (settings.isGD) {
     	//log.info "isGD: true"
-    	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),zwave.basicV1.basicSet(value: 0x00).format(),zwave.switchBinaryV1.switchBinaryGet().format()],3000)	
+    	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),zwave.basicV1.basicSet(value: 0x00).format(),zwave.switchBinaryV1.switchBinaryGet().format()],1000)	
     } else {
     	//log.info "isGD: false"
 		delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),zwave.switchBinaryV1.switchBinaryGet().format()])
