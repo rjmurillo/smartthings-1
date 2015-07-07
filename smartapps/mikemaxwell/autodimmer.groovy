@@ -28,7 +28,7 @@ definition(
     author		: "Mike Maxwell",
     description	: 
 
-"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux sensor readings and the dimmer levels that you specify." + 
+"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux (illuminance) sensor readings and the dimmer levels that you specify." + 
 "This smartApp does not turn on dimmers directly, this allows you to retain all your existing on/off smartApps. This smartApp provides intelligent level management to your existing setup.",
     category	: "Convenience",
     iconUrl		: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet-luminance.png",
@@ -38,7 +38,7 @@ definition(
 preferences {
     page(name: "page1", title: "autoDimmer Configuration", nextPage: "page2", uninstall: true) {
 		section("About: 'autoDimmer snap-in'"){
-        	paragraph 	"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux sensor readings and the dimmer levels that you specify." + 
+        	paragraph 	"This add on smartApp automatically adjusts dimmer levels when dimmer(s) are turned on from physical switches or other smartApps, levels are set based on lux (illuminance) sensor readings and the dimmer levels that you specify." + 
 						"This smartApp does not turn on dimmers directly, this allows you to retain all your existing on/off smartApps. This smartApp provides intelligent level management to your existing setup."
         }
 		section ("Setup:"){
@@ -218,13 +218,13 @@ def dimHandler(evt) {
         	dimVar = dimBright
     	}
    
-    	if (!this."${prefVar}") log.debug "Auto Dimmer is using defaults..."
-    	else log.debug "Auto Dimmer is using overrides..."
+    	if (!this."${prefVar}") log.info "autoDimmer is using defaults..."
+    	else log.info "autoDimmer is using overrides..."
      
     	def newDimmerLevel = (this."${prefVar}" ?: dimVar).toInteger()
 		if (newDimmerLevel == 100) newDimmerLevel = 99
     
-    	log.debug "dimmer:${dimmer.displayName}, currentLevel:${crntDimmerLevel}%, requestedValue:${newDimmerLevel}%, currentLux:${crntLux}"
+    	log.info "dimmer:${dimmer.displayName}, currentLevel:${crntDimmerLevel}%, requestedValue:${newDimmerLevel}%, currentLux:${crntLux}"
   
     	if ( newDimmerLevel != crntDimmerLevel ) dimmer.setLevel(newDimmerLevel)
     
